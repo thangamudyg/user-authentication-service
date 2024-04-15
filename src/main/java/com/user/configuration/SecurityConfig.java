@@ -38,11 +38,14 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable).authorizeHttpRequests(expressionInterceptUrlRegistry ->
-                        expressionInterceptUrlRegistry
-                                .requestMatchers("/login").hasAnyAuthority(SecurityRole.ADMIN.name(), SecurityRole.USER.name())
-                                .anyRequest().authenticated())
-                .httpBasic(httpSecurityHttpBasicConfigurer -> httpSecurityHttpBasicConfigurer.authenticationEntryPoint(authenticationEntryPoint));
+        http.headers(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf
+                .ignoringRequestMatchers("/h2console/**")).authorizeHttpRequests(authRequest ->
+                authRequest
+                        .requestMatchers("/login").hasAnyAuthority(SecurityRole.ADMIN.name(), SecurityRole.USER.name())
+                        .requestMatchers("/h2console/**").permitAll()
+                        .anyRequest().authenticated());;
+        http.httpBasic(httpSecurityHttpBasicConfigurer -> httpSecurityHttpBasicConfigurer.authenticationEntryPoint(authenticationEntryPoint));
         http.addFilterAfter(new CustomFilter(), BasicAuthenticationFilter.class);
         return http.build();
     }
@@ -54,6 +57,6 @@ public class SecurityConfig {
 
     @Bean
     public UserDetailsService userDetailsService() {
-        return new CustomUserDetailService(passwordEncoder());
+        return new CustomUserDetailService();
     }
 }
